@@ -24,13 +24,33 @@
 
         .city-input { 
             margin: 20px 0; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         input[type="text"] {
             width: 70%;
             padding: 10px;
             border-radius: 8px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            background-color: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            color: var(--tg-theme-text-color, #000000);
+            margin-right: 10px;
+        }
+
+        .search-btn {
+            background: var(--tg-theme-button-color, #007AFF);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        
+        .search-btn:hover {
+            opacity: 0.8;
         }
         
         .weather-card {
@@ -134,7 +154,8 @@
         <h1>🌤️ Weather App</h1>
 
         <div class="city-input">
-            <input type="text" id="city-input" placeholder="Enter city name"/>
+            <input type="text" id="city-input" placeholder="Enter city name" value="isfahan"/>
+            <button class="search-btn" id="search-button">Search</button>
         </div>
         
         <div class="loading" id="loading">
@@ -176,22 +197,40 @@
         const tg = window.Eitaa.WebApp;
         
         // Configuration
-        const API_KEY = '0c177d632df6c2f13ee515351fdfabdd';
-        const CITY = document.getElementById("city-input").value || "isfahan";
-        const API_URL = `https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${API_KEY}&units=metric`;
-        
+        const API_KEY = '0c177d632df6c2f13ee515351fdfabdd'; // Replace with your actual API key
+        const CITY_INPUT_ELEMENT = document.getElementById('city-input');
+        const SEARCH_BUTTON_ELEMENT = document.getElementById('search-button');
+
         // Set up the main button
         tg.MainButton.text = "Get Weather";
         tg.MainButton.show();
         
         // Main button click handler
         tg.MainButton.onClick(fetchWeatherData);
+
+        // Search button click handler
+        SEARCH_BUTTON_ELEMENT.addEventListener('click', fetchWeatherData);
+
+        // Input field Enter key handler
+        CITY_INPUT_ELEMENT.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                fetchWeatherData();
+            }
+        });
         
         // Fetch weather data function
         async function fetchWeatherData() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
             const weatherCard = document.getElementById('weather-card');
+            
+            const city = CITY_INPUT_ELEMENT.value.trim();
+            if (!city) {
+                alert('Please enter a city name.');
+                return;
+            }
+
+            const API_URL = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}&units=metric`;
             
             // Show loading state
             loading.style.display = 'block';
@@ -260,7 +299,7 @@
         // Notify Eitaa that the app is ready
         tg.ready();
         
-        // Auto-load weather data on startup
+        // Auto-load weather data on startup with a default city
         window.addEventListener('load', function() {
             setTimeout(fetchWeatherData, 500);
         });
