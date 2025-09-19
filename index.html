@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <script src="https://developer.eitaa.com/eitaa-web-app.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .city-input { 
+            margin: 20px 0; 
+        }
+
+        input[type="text"] {
+            width: 70%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+        }
+        
+        .weather-card {
+            background: var(--tg-theme-secondary-bg-color, #f8f9fa);
+            border-radius: 12px;
+            padding: 24px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .city-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .temperature {
+            font-size: 48px;
+            font-weight: 300;
+            margin: 16px 0;
+            color: var(--tg-theme-accent-text-color, #007AFF);
+        }
+        
+        .description {
+            font-size: 18px;
+            margin-bottom: 16px;
+            text-transform: capitalize;
+            color: var(--tg-theme-hint-color, #999999);
+        }
+        
+        .details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .detail-item {
+            background: var(--tg-theme-bg-color, #ffffff);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+        }
+        
+        .detail-label {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999999);
+            margin-bottom: 4px;
+        }
+        
+        .detail-value {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--tg-theme-text-color, #000000);
+        }
+        
+        .loading {
+            display: none;
+            padding: 40px;
+            color: var(--tg-theme-hint-color, #999999);
+        }
+        
+        .error {
+            display: none;
+            padding: 20px;
+            background: #ffebee;
+            color: #c62828;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .refresh-btn {
+            background: var(--tg-theme-button-color, #007AFF);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        
+        .refresh-btn:hover {
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .temperature {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌤️ Weather App</h1>
+
+        <div class="city-input">
+            <input type="text" id="city-input" placeholder="Enter city name"/>
+            <button onclick="fetchWeatherData()">Get Weather</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <p>Loading weather data...</p>
+        </div>
+        
+        <div class="error" id="error">
+            <p>Failed to load weather data. Please try again.</p>
+        </div>
+        
+        <div class="weather-card" id="weather-card" style="display: none;">
+            <div class="city-name" id="city-name">isfahan</div>
+            <div class="temperature" id="temperature">--°C</div>
+            <div class="description" id="description">--</div>
+            
+            <div class="details">
+                <div class="detail-item">
+                    <div class="detail-label">Feels like</div>
+                    <div class="detail-value" id="feels-like">--°C</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Humidity</div>
+                    <div class="detail-value" id="humidity">--%</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Wind Speed</div>
+                    <div class="detail-value" id="wind-speed">-- m/s</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Pressure</div>
+                    <div class="detail-value" id="pressure">-- hPa</div>
+                </div>
+            </div>
+            
+            <!-- <button class="refresh-btn" onclick="fetchWeatherData()">🔄 Refresh</button> -->
+        </div>
+    </div>
+
+    <script>
+        // Initialize Eitaa Web App
+        const tg = window.Eitaa.WebApp;
+        
+        // Configuration
+        const API_KEY = '0c177d632df6c2f13ee515351fdfabdd';
+        const CITY = document.getElementById("city-input").value || "isfahan";
+        const API_URL = `https://api.openweathermap.org/data/2.5/weather?q=${CITY}&appid=${API_KEY}&units=metric`;
+        
+        // Set up the main button
+        tg.MainButton.text = "Get Weather";
+        tg.MainButton.show();
+        
+        // Main button click handler
+        tg.MainButton.onClick(fetchWeatherData);
+        
+        // Fetch weather data function
+        async function fetchWeatherData() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const weatherCard = document.getElementById('weather-card');
+            
+            // Show loading state
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            weatherCard.style.display = 'none';
+            
+            // Update main button
+            tg.MainButton.text = "Loading...";
+            tg.MainButton.disable();
+            
+            try {
+                const response = await fetch(API_URL);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Update UI with weather data
+                document.getElementById('city-name').textContent = data.name;
+                document.getElementById('temperature').textContent = `${Math.round(data.main.temp)}°C`;
+                document.getElementById('description').textContent = data.weather[0].description;
+                document.getElementById('feels-like').textContent = `${Math.round(data.main.feels_like)}°C`;
+                document.getElementById('humidity').textContent = `${data.main.humidity}%`;
+                document.getElementById('wind-speed').textContent = `${data.wind.speed} m/s`;
+                document.getElementById('pressure').textContent = `${data.main.pressure} hPa`;
+                
+                // Show weather card
+                loading.style.display = 'none';
+                weatherCard.style.display = 'block';
+                
+                // Update main button
+                tg.MainButton.text = "Refresh Weather";
+                tg.MainButton.enable();
+                
+                // Provide haptic feedback
+                tg.HapticFeedback.notificationOccurred('success');
+                
+            } catch (err) {
+                console.error('Error fetching weather data:', err);
+                
+                // Show error state
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                
+                // Update main button
+                tg.MainButton.text = "Try Again";
+                tg.MainButton.enable();
+                
+                // Provide haptic feedback
+                tg.HapticFeedback.notificationOccurred('error');
+            }
+        }
+        
+        // Set theme colors
+        tg.setHeaderColor(tg.themeParams.secondary_bg_color || '#f8f9fa');
+        tg.setBackgroundColor(tg.themeParams.bg_color || '#ffffff');
+        
+        // Enable vertical swipes for better UX
+        tg.enableVerticalSwipes();
+        
+        // Expand the app to full height
+        tg.expand();
+        
+        // Notify Eitaa that the app is ready
+        tg.ready();
+        
+        // Auto-load weather data on startup
+        window.addEventListener('load', function() {
+            setTimeout(fetchWeatherData, 500);
+        });
+    </script>
+</body>
+</html>
